@@ -29,7 +29,7 @@ class Course(models.Model):
 class Lesson(models.Model):
     course = models.ForeignKey(
         Course,
-        on_delete=models.SET_NULL,
+        on_delete=models.CASCADE,
         verbose_name="Курс",
         help_text="Выберете курс",
     )
