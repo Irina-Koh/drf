@@ -87,7 +87,7 @@ class Payment(models.Model):
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
-        related_name="payments",
+        related_name="other_payments",
         verbose_name="Пользователь",
     )
     payment_date = models.DateTimeField(auto_now_add=True, verbose_name="Дата оплаты")

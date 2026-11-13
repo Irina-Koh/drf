@@ -78,25 +78,64 @@ class Lesson(models.Model):
         verbose_name = "Урок"
         verbose_name_plural = "Уроки"
 
+
 class Subscription(models.Model):
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
-        related_name='subscriptions',
-        verbose_name='Пользователь'
+        related_name="subscriptions",
+        verbose_name="Пользователь",
     )
     course = models.ForeignKey(
-        'Course',
+        "Course",
         on_delete=models.CASCADE,
-        related_name='subscribers',
-        verbose_name='Курс'
+        related_name="subscribers",
+        verbose_name="Курс",
     )
-    created_at = models.DateTimeField(auto_now_add=True, verbose_name='Дата подписки')
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Дата подписки")
 
     class Meta:
-        unique_together = ('user', 'course')
-        verbose_name = 'Подписка'
-        verbose_name_plural = 'Подписки'
+        unique_together = ("user", "course")
+        verbose_name = "Подписка"
+        verbose_name_plural = "Подписки"
 
     def __str__(self):
-        return f'{self.user} → {self.course}'
+        return f"{self.user} → {self.course}"
+
+
+class PaymentCourse(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        verbose_name="Пользователь",
+        help_text="Укажите пользователя",
+        related_name='course_payments'
+    )
+
+    amount = models.PositiveSmallIntegerField(
+        verbose_name="Сумма платежа", help_text="Введите сумму платежа"
+    )
+    stripe_session_id = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True,
+        verbose_name="id сессии",
+        help_text="Укажите id сессии",
+    )
+    link = models.URLField(
+        max_length=400,
+        blank=True,
+        null=True,
+        verbose_name="Ссылка на оплату",
+        help_text="Укажите ссылку на оплату",
+    )
+
+
+    class Meta:
+        verbose_name = "Оплата"
+        verbose_name_plural = "Платежи"
+
+    def __str__(self):
+        return f"{self.user} → {self.amount}"
