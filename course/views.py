@@ -1,11 +1,21 @@
-from rest_framework.generics import (CreateAPIView, DestroyAPIView,
-                                     ListAPIView, RetrieveAPIView,
-                                     UpdateAPIView)
+from django.urls import reverse
+from rest_framework.generics import (
+    CreateAPIView,
+    DestroyAPIView,
+    ListAPIView,
+    RetrieveAPIView,
+    UpdateAPIView,
+)
 from rest_framework.viewsets import ModelViewSet
 
-from course.models import Course, Lesson
-from course.serializers import (CourseDetailSerializer, CourseSerializer,
-                                LessonSerializer)
+import course
+import users
+from course.models import Course, Lesson, PaymentCourse
+from course.serializers import (
+    CourseDetailSerializer,
+    CourseSerializer,
+    LessonSerializer, PaymentCourseSerializer,
+)
 from users.permissions import IsModer, IsOwner
 from rest_framework.permissions import IsAuthenticated
 from django.shortcuts import get_object_or_404
@@ -14,6 +24,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from .models import Subscription
 from .paginations import CustomPagination
+from .servises import create_stripe_price
 
 
 class CourseViewSet(ModelViewSet):
@@ -27,7 +38,7 @@ class CourseViewSet(ModelViewSet):
 
     def get_serializer_context(self):
         context = super().get_serializer_context()
-        context['request'] = self.request
+        context["request"] = self.request
         return context
 
     def perform_create(self, serializer):
@@ -40,11 +51,11 @@ class CourseViewSet(ModelViewSet):
             self.permission_classes = [IsAuthenticated]
         elif self.action == "create":
             self.permission_classes = [~IsModer]
-        elif self.action == 'retrieve':
+        elif self.action == "retrieve":
             self.permission_classes = [IsAuthenticated]
-        elif self.action in ('update', 'partial_update'):
+        elif self.action in ("update", "partial_update"):
             self.permission_classes = [IsModer | IsOwner]
-        elif self.action == 'destroy':
+        elif self.action == "destroy":
             self.permission_classes = [~IsModer | IsOwner]
 
         return super().get_permissions()
@@ -54,6 +65,7 @@ class LessonCreateApiView(CreateAPIView):
     queryset = Lesson.objects.all()
     serializer_class = LessonSerializer
     permission_classes = (~IsModer, IsAuthenticated)
+
     def perform_create(self, serializer):
         lesson = serializer.save()
         lesson.owner = self.request.user
@@ -81,10 +93,7 @@ class LessonUpdateApiView(UpdateAPIView):
 class LessonDestroyApiView(DestroyAPIView):
     queryset = Lesson.objects.all()
     serializer_class = LessonSerializer
-    permission_classes = (
-        IsAuthenticated,
-        IsOwner
-    )
+    permission_classes = (IsAuthenticated, IsOwner)
 
 
 class SubscribeToggleAPIView(APIView):
@@ -92,7 +101,7 @@ class SubscribeToggleAPIView(APIView):
 
     def post(self, request, *args, **kwargs):
         user = request.user
-        course_id = request.data.get('course_id')
+        course_id = request.data.get("course_id")
 
         if not course_id:
             return Response({"error": "course_id is required"}, status=400)
@@ -103,11 +112,21 @@ class SubscribeToggleAPIView(APIView):
 
         if subs_qs.exists():
             subs_qs.delete()
-            message = 'Подписка удалена'
+            message = "Подписка удалена"
         else:
             Subscription.objects.create(user=user, course=course)
-            message = 'Подписка добавлена'
+            message = "Подписка добавлена"
 
         return Response({"message": message})
 
+class PaymentCourseCreateApiView(CreateAPIView):
+    queryset = PaymentCourse.objects.all()
+    serializer_class = PaymentCourseSerializer
 
+    def perform_create(self, serializer):
+        payment = serializer.save(user=self.request.user)
+        price = create_stripe_price(payment.amount)
+        session_id, payment_link = create_stripe_price(price)
+        payment.session_id= session_id
+        payment.link = payment_link
+        payment.save()

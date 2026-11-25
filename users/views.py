@@ -7,8 +7,11 @@ from rest_framework.permissions import AllowAny
 from rest_framework.viewsets import ModelViewSet
 
 from users.models import Payment, User
-from users.serializers import (PaymentSerializer, UserPaymentHistorySerializer,
-                               UserSerializer)
+from users.serializers import (
+    PaymentSerializer,
+    UserPaymentHistorySerializer,
+    UserSerializer,
+)
 
 
 class UserCreateAPIView(CreateAPIView):
