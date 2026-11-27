@@ -31,6 +31,7 @@ class Course(models.Model):
         verbose_name="Автор курса",
         help_text="Введите автора курса",
     )
+    is_updated = models.BooleanField(default=False)
 
     class Meta:
         verbose_name = "Курс"
@@ -111,7 +112,7 @@ class PaymentCourse(models.Model):
         blank=True,
         verbose_name="Пользователь",
         help_text="Укажите пользователя",
-        related_name='course_payments'
+        related_name="course_payments",
     )
 
     amount = models.PositiveSmallIntegerField(
@@ -131,7 +132,6 @@ class PaymentCourse(models.Model):
         verbose_name="Ссылка на оплату",
         help_text="Укажите ссылку на оплату",
     )
-
 
     class Meta:
         verbose_name = "Оплата"

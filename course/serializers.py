@@ -1,5 +1,6 @@
 from rest_framework import serializers
-from course.models import Course, Lesson, Subscription, PaymentCourse
+
+from course.models import Course, Lesson, PaymentCourse, Subscription
 from course.validators import validate_no_external_links
 
 
@@ -35,8 +36,6 @@ class CourseDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = Course
         fields = ("name", "description", "preview", "number_of_lessons", "lesson")
-
-
 
 
 class PaymentCourseSerializer(serializers.ModelSerializer):

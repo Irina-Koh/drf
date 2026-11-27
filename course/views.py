@@ -1,27 +1,21 @@
+from django.shortcuts import get_object_or_404
 from django.urls import reverse
-from rest_framework.generics import (
-    CreateAPIView,
-    DestroyAPIView,
-    ListAPIView,
-    RetrieveAPIView,
-    UpdateAPIView,
-)
+from rest_framework.generics import (CreateAPIView, DestroyAPIView,
+                                     ListAPIView, RetrieveAPIView,
+                                     UpdateAPIView)
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet
 
 import course
 import users
 from course.models import Course, Lesson, PaymentCourse
-from course.serializers import (
-    CourseDetailSerializer,
-    CourseSerializer,
-    LessonSerializer, PaymentCourseSerializer,
-)
+from course.serializers import (CourseDetailSerializer, CourseSerializer,
+                                LessonSerializer, PaymentCourseSerializer)
+from course.tasks import send_course_update_email
 from users.permissions import IsModer, IsOwner
-from rest_framework.permissions import IsAuthenticated
-from django.shortcuts import get_object_or_404
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
+
 from .models import Subscription
 from .paginations import CustomPagination
 from .servises import create_stripe_price
@@ -45,6 +39,12 @@ class CourseViewSet(ModelViewSet):
         course = serializer.save()
         course.owner = self.request.user
         course.save()
+
+    def perform_update(self, serializer):
+        course = serializer.save()
+        course.is_updated = True
+        for sub in course.subscribers.all():
+            send_course_update_email.delay(sub.user.email, course.name)
 
     def get_permissions(self):
         if self.action == "list":
@@ -119,6 +119,7 @@ class SubscribeToggleAPIView(APIView):
 
         return Response({"message": message})
 
+
 class PaymentCourseCreateApiView(CreateAPIView):
     queryset = PaymentCourse.objects.all()
     serializer_class = PaymentCourseSerializer
@@ -127,6 +128,6 @@ class PaymentCourseCreateApiView(CreateAPIView):
         payment = serializer.save(user=self.request.user)
         price = create_stripe_price(payment.amount)
         session_id, payment_link = create_stripe_price(price)
-        payment.session_id= session_id
+        payment.session_id = session_id
         payment.link = payment_link
         payment.save()

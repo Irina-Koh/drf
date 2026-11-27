@@ -1,9 +1,12 @@
 import stripe
-from config.settings import STRIPE_API_KEY
 from stripe import StripeClient
+
+from config.settings import STRIPE_API_KEY
+
 stripe.api_key = STRIPE_API_KEY
 
 client = StripeClient(stripe.api_key)
+
 
 def create_stripe_product():
     """
@@ -12,13 +15,14 @@ def create_stripe_product():
     product = client.v1.products.create({"name": "Gold Plan"})
     return product
 
+
 def create_stripe_price(product, amount):
     """
     Создает цену в Stripe.
     """
     price = client.v1.prices.create(
         currency="rub",
-        unit_amount = amount * 100,
+        unit_amount=amount * 100,
         recurring={"interval": "month"},
         product=product.id,
     )
@@ -35,4 +39,3 @@ def create_checkout_session(price):
         mode="payment",
     )
     return session.get("id"), session.get("url")
-

@@ -26,5 +26,3 @@ class UserPaymentHistorySerializer(ModelSerializer):
     class Meta:
         model = User
         fields = ["id", "username", "payments"]
-
-
